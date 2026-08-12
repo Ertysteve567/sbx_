@@ -8,6 +8,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: 清理 Gradle 缓存
+        run: rm -rf ~/.gradle/caches/ || true
+
       - name: 生成所有源代码
         run: |
           mkdir -p src/main/java/com/example/namedobsidian/mixin
@@ -53,12 +56,13 @@ jobs:
 
           cat > gradle.properties <<'EOF'
           org.gradle.jvmargs=-Xmx1024M
+          org.gradle.daemon=false
           EOF
 
           cat > gradle/wrapper/gradle-wrapper.properties <<'EOF'
           distributionBase=GRADLE_USER_HOME
           distributionPath=wrapper/dists
-          distributionUrl=https\://services.gradle.org/distributions/gradle-8.10-bin.zip
+          distributionUrl=https\://services.gradle.org/distributions/gradle-8.10.2-bin.zip
           zipStoreBase=GRADLE_USER_HOME
           zipStorePath=wrapper/dists
           EOF
@@ -250,10 +254,10 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Setup Gradle 8.10
+      - name: Setup Gradle 8.10.2
         uses: gradle/actions/setup-gradle@v3
         with:
-          gradle-version: 8.10
+          gradle-version: 8.10.2
 
       - name: Build
         run: gradle build --no-daemon
