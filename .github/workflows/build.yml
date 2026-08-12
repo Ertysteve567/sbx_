@@ -10,13 +10,11 @@ jobs:
 
       - name: 生成所有源代码
         run: |
-          # 创建目录结构
           mkdir -p src/main/java/com/example/namedobsidian/mixin
           mkdir -p src/main/resources/assets/minecraft/models/block
           mkdir -p src/main/resources/assets/minecraft/models/item
           mkdir -p gradle/wrapper
 
-          # ----- build.gradle (使用 Loom 1.8-SNAPSHOT，支持客户端类) -----
           cat > build.gradle <<'EOF'
           plugins {
               id 'fabric-loom' version '1.8-SNAPSHOT'
@@ -36,14 +34,12 @@ jobs:
           }
           loom {
               splitEnvironmentSourceSets()
-              // 强制在编译时加载客户端类
               runClient {
                   source sourceSets.client
               }
           }
           EOF
 
-          # ----- settings.gradle -----
           cat > settings.gradle <<'EOF'
           pluginManagement {
               repositories {
@@ -55,21 +51,18 @@ jobs:
           rootProject.name = "sbx_frag_7"
           EOF
 
-          # ----- gradle.properties -----
           cat > gradle.properties <<'EOF'
           org.gradle.jvmargs=-Xmx1024M
           EOF
 
-          # ----- gradle-wrapper.properties -----
           cat > gradle/wrapper/gradle-wrapper.properties <<'EOF'
           distributionBase=GRADLE_USER_HOME
           distributionPath=wrapper/dists
-          distributionUrl=https\://services.gradle.org/distributions/gradle-8.8-bin.zip
+          distributionUrl=https\://services.gradle.org/distributions/gradle-8.10-bin.zip
           zipStoreBase=GRADLE_USER_HOME
           zipStorePath=wrapper/dists
           EOF
 
-          # ----- fabric.mod.json (指定 client 环境) -----
           cat > src/main/resources/fabric.mod.json <<'EOF'
           {
             "schemaVersion": 1,
@@ -92,7 +85,6 @@ jobs:
           }
           EOF
 
-          # ----- namedobsidian.mixins.json -----
           cat > src/main/resources/namedobsidian.mixins.json <<'EOF'
           {
             "required": true,
@@ -104,7 +96,6 @@ jobs:
           }
           EOF
 
-          # ----- NamedObsidianMod.java -----
           cat > src/main/java/com/example/namedobsidian/NamedObsidianMod.java <<'EOF'
           package com.example.namedobsidian;
           import net.fabricmc.api.ModInitializer;
@@ -113,19 +104,15 @@ jobs:
           }
           EOF
 
-          # ----- NamedObsidianClient.java (物品栏 + 颜色) -----
           cat > src/main/java/com/example/namedobsidian/NamedObsidianClient.java <<'EOF'
           package com.example.namedobsidian;
           import net.fabricmc.api.ClientModInitializer;
-          import net.fabricmc.fabric.api.client.rendering.v1.ColorProviderRegistry;
           import net.minecraft.client.renderer.item.ItemProperties;
           import net.minecraft.resources.ResourceLocation;
           import net.minecraft.world.item.Items;
-          import net.minecraft.world.level.block.Blocks;
           public class NamedObsidianClient implements ClientModInitializer {
               @Override
               public void onInitializeClient() {
-                  // 物品栏纹理切换
                   ItemProperties.register(Items.OBSIDIAN, ResourceLocation.withDefaultNamespace("void"),
                       (stack, world, entity, seed) -> 
                           stack.hasCustomName() && "Void.exp".equals(stack.getCustomName().getString()) ? 1.0f : 0.0f
@@ -138,7 +125,6 @@ jobs:
           }
           EOF
 
-          # ----- ObsidianData.java (缓存坐标) -----
           cat > src/main/java/com/example/namedobsidian/ObsidianData.java <<'EOF'
           package com.example.namedobsidian;
           import net.minecraft.core.BlockPos;
@@ -152,7 +138,6 @@ jobs:
           }
           EOF
 
-          # ----- PlaceMixin.java (放置时记录命名) -----
           cat > src/main/java/com/example/namedobsidian/mixin/PlaceMixin.java <<'EOF'
           package com.example.namedobsidian.mixin;
           import com.example.namedobsidian.ObsidianData;
@@ -181,7 +166,6 @@ jobs:
           }
           EOF
 
-          # ----- BlockRenderDispatcherMixin.java (地面纹理替换) -----
           cat > src/main/java/com/example/namedobsidian/mixin/BlockRenderDispatcherMixin.java <<'EOF'
           package com.example.namedobsidian.mixin;
           import com.example.namedobsidian.ObsidianData;
@@ -219,7 +203,6 @@ jobs:
           }
           EOF
 
-          # ----- BlockRemoveMixin.java (破坏时清除缓存) -----
           cat > src/main/java/com/example/namedobsidian/mixin/BlockRemoveMixin.java <<'EOF'
           package com.example.namedobsidian.mixin;
           import com.example.namedobsidian.ObsidianData;
@@ -240,15 +223,12 @@ jobs:
           }
           EOF
 
-          # ----- 方块模型 (用于物品显示) -----
           cat > src/main/resources/assets/minecraft/models/block/obsidian_void.json <<'EOF'
           {"parent":"minecraft:block/cube_all","textures":{"all":"minecraft:block/obsidian_void"}}
           EOF
           cat > src/main/resources/assets/minecraft/models/block/crying_obsidian_sky.json <<'EOF'
           {"parent":"minecraft:block/cube_all","textures":{"all":"minecraft:block/crying_obsidian_sky"}}
           EOF
-
-          # ----- 物品模型 (含覆盖规则) -----
           cat > src/main/resources/assets/minecraft/models/item/obsidian.json <<'EOF'
           {"parent":"minecraft:item/generated","textures":{"layer0":"minecraft:item/obsidian"},"overrides":[{"predicate":{"minecraft:void":1},"model":"minecraft:item/obsidian_void"}]}
           EOF
@@ -270,10 +250,10 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Setup Gradle 8.8
+      - name: Setup Gradle 8.10
         uses: gradle/actions/setup-gradle@v3
         with:
-          gradle-version: 8.8
+          gradle-version: 8.10
 
       - name: Build
         run: gradle build --no-daemon
