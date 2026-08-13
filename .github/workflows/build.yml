@@ -31,8 +31,6 @@ jobs:
               minecraft "com.mojang:minecraft:1.21.1"
               mappings loom.officialMojangMappings()
               modImplementation "net.fabricmc:fabric-loader:0.15.11"
-              // 使用确定存在的 Fabric API 版本
-              modImplementation "net.fabricmc.fabric-api:fabric-api:0.92.0+1.21.1"
           }
           EOF
 
@@ -77,8 +75,7 @@ jobs:
             "mixins": ["namedobsidian.mixins.json"],
             "depends": {
               "fabricloader": ">=0.15.0",
-              "minecraft": "~1.21.1",
-              "fabric-api": ">=0.92.0"
+              "minecraft": "~1.21.1"
             }
           }
           EOF
@@ -105,30 +102,46 @@ jobs:
           cat > src/main/java/com/example/namedobsidian/NamedObsidianClient.java <<'EOF'
           package com.example.namedobsidian;
           import net.fabricmc.api.ClientModInitializer;
-          import net.fabricmc.fabric.api.client.model.ModelPredicateProviderRegistry;
+          import net.minecraft.client.Minecraft;
+          import net.minecraft.client.renderer.item.ItemProperties;
           import net.minecraft.resources.ResourceLocation;
           import net.minecraft.world.item.Items;
+          import java.lang.reflect.Method;
           public class NamedObsidianClient implements ClientModInitializer {
               @Override
               public void onInitializeClient() {
-                  ModelPredicateProviderRegistry.register(Items.OBSIDIAN,
-                      ResourceLocation.withDefaultNamespace("void"),
-                      (stack, world, entity, seed) -> {
-                          if ("Void.exp".equals(stack.getDisplayName().getString())) {
-                              return 1.0f;
+                  try {
+                      // 使用反射绕过私有访问限制
+                      Method registerMethod = ItemProperties.class.getDeclaredMethod(
+                          "register", 
+                          net.minecraft.world.item.Item.class,
+                          ResourceLocation.class,
+                          net.minecraft.client.renderer.item.ClampedItemPropertyFunction.class
+                      );
+                      registerMethod.setAccessible(true);
+                      
+                      registerMethod.invoke(null, Items.OBSIDIAN,
+                          ResourceLocation.withDefaultNamespace("void"),
+                          (stack, world, entity, seed) -> {
+                              if ("Void.exp".equals(stack.getDisplayName().getString())) {
+                                  return 1.0f;
+                              }
+                              return 0.0f;
                           }
-                          return 0.0f;
-                      }
-                  );
-                  ModelPredicateProviderRegistry.register(Items.CRYING_OBSIDIAN,
-                      ResourceLocation.withDefaultNamespace("sky"),
-                      (stack, world, entity, seed) -> {
-                          if ("<SKY.GEM>".equals(stack.getDisplayName().getString())) {
-                              return 1.0f;
+                      );
+                      registerMethod.invoke(null, Items.CRYING_OBSIDIAN,
+                          ResourceLocation.withDefaultNamespace("sky"),
+                          (stack, world, entity, seed) -> {
+                              if ("<SKY.GEM>".equals(stack.getDisplayName().getString())) {
+                                  return 1.0f;
+                              }
+                              return 0.0f;
                           }
-                          return 0.0f;
-                      }
-                  );
+                      );
+                  } catch (Exception e) {
+                      // 如果反射失败，说明环境不支持，但基本不会发生
+                      e.printStackTrace();
+                  }
               }
           }
           EOF
