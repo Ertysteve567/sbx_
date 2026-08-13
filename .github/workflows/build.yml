@@ -1,4 +1,4 @@
- name: Build Mod
+name: Build Mod
 
 on: [push]
 
@@ -15,7 +15,6 @@ jobs:
           mkdir -p src/main/resources/assets/minecraft/models/item
           mkdir -p gradle/wrapper
 
-          # ----- build.gradle (禁用 splitEnvironmentSourceSets) -----
           cat > build.gradle <<'EOF'
           plugins {
               id 'fabric-loom' version '1.8.13'
@@ -33,15 +32,12 @@ jobs:
               mappings loom.officialMojangMappings()
               modImplementation "net.fabricmc:fabric-loader:0.15.11"
           }
-          // 【核心修改】禁用分离源码集，全部合并到 main
           loom {
               splitEnvironmentSourceSets = false
           }
-          // 显式将 client 源码目录添加到 main 的编译路径中
           sourceSets.main.java.srcDirs += 'src/client/java'
           EOF
 
-          # ----- settings.gradle -----
           cat > settings.gradle <<'EOF'
           pluginManagement {
               repositories {
@@ -53,13 +49,11 @@ jobs:
           rootProject.name = "sbx_frag_7"
           EOF
 
-          # ----- gradle.properties -----
           cat > gradle.properties <<'EOF'
           org.gradle.jvmargs=-Xmx1024M
           org.gradle.daemon=false
           EOF
 
-          # ----- gradle-wrapper.properties -----
           cat > gradle/wrapper/gradle-wrapper.properties <<'EOF'
           distributionBase=GRADLE_USER_HOME
           distributionPath=wrapper/dists
@@ -68,7 +62,6 @@ jobs:
           zipStorePath=wrapper/dists
           EOF
 
-          # ----- fabric.mod.json (环境设为 client) -----
           cat > src/main/resources/fabric.mod.json <<'EOF'
           {
             "schemaVersion": 1,
@@ -91,7 +84,6 @@ jobs:
           }
           EOF
 
-          # ----- namedobsidian.mixins.json -----
           cat > src/main/resources/namedobsidian.mixins.json <<'EOF'
           {
             "required": true,
@@ -103,7 +95,6 @@ jobs:
           }
           EOF
 
-          # ----- 所有 Java 源码（同前）-----
           cat > src/main/java/com/example/namedobsidian/NamedObsidianMod.java <<'EOF'
           package com.example.namedobsidian;
           import net.fabricmc.api.ModInitializer;
@@ -231,7 +222,6 @@ jobs:
           }
           EOF
 
-          # ----- 模型文件（同前）-----
           cat > src/main/resources/assets/minecraft/models/block/obsidian_void.json <<'EOF'
           {"parent":"minecraft:block/cube_all","textures":{"all":"minecraft:block/obsidian_void"}}
           EOF
