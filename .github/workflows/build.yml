@@ -31,6 +31,8 @@ jobs:
               minecraft "com.mojang:minecraft:1.21.1"
               mappings loom.officialMojangMappings()
               modImplementation "net.fabricmc:fabric-loader:0.15.11"
+              // 加入 Fabric API（使用确定存在的版本）
+              modImplementation "net.fabricmc.fabric-api:fabric-api:0.96.0+1.21.1"
           }
           EOF
 
@@ -75,7 +77,8 @@ jobs:
             "mixins": ["namedobsidian.mixins.json"],
             "depends": {
               "fabricloader": ">=0.15.0",
-              "minecraft": "~1.21.1"
+              "minecraft": "~1.21.1",
+              "fabric-api": ">=0.96.0"
             }
           }
           EOF
@@ -102,27 +105,25 @@ jobs:
           cat > src/main/java/com/example/namedobsidian/NamedObsidianClient.java <<'EOF'
           package com.example.namedobsidian;
           import net.fabricmc.api.ClientModInitializer;
-          import net.minecraft.client.renderer.item.ItemProperties;
+          import net.fabricmc.fabric.api.client.model.ModelPredicateProviderRegistry;
           import net.minecraft.resources.ResourceLocation;
           import net.minecraft.world.item.Items;
           public class NamedObsidianClient implements ClientModInitializer {
               @Override
               public void onInitializeClient() {
-                  ItemProperties.register(Items.OBSIDIAN, 
+                  ModelPredicateProviderRegistry.register(Items.OBSIDIAN,
                       ResourceLocation.withDefaultNamespace("void"),
                       (stack, world, entity, seed) -> {
-                          if (stack.hasCustomHoverName() && 
-                              "Void.exp".equals(stack.getCustomHoverName().getString())) {
+                          if (stack.hasCustomName() && "Void.exp".equals(stack.getCustomName().getString())) {
                               return 1.0f;
                           }
                           return 0.0f;
                       }
                   );
-                  ItemProperties.register(Items.CRYING_OBSIDIAN, 
+                  ModelPredicateProviderRegistry.register(Items.CRYING_OBSIDIAN,
                       ResourceLocation.withDefaultNamespace("sky"),
                       (stack, world, entity, seed) -> {
-                          if (stack.hasCustomHoverName() && 
-                              "<SKY.GEM>".equals(stack.getCustomHoverName().getString())) {
+                          if (stack.hasCustomName() && "<SKY.GEM>".equals(stack.getCustomName().getString())) {
                               return 1.0f;
                           }
                           return 0.0f;
@@ -161,11 +162,11 @@ jobs:
           public class PlaceMixin {
               @Inject(method = "place", at = @At("RETURN"))
               private void onPlace(BlockPlaceContext context, CallbackInfoReturnable<InteractionResult> cir) {
-                  if (cir.getReturnValue().consumesAction() && context.getItemInHand().hasCustomHoverName()) {
+                  if (cir.getReturnValue().consumesAction() && context.getItemInHand().hasCustomName()) {
                       Level world = context.getLevel();
                       if (world.isClientSide()) {
                           BlockPos pos = context.getClickedPos();
-                          String name = context.getItemInHand().getCustomHoverName().getString();
+                          String name = context.getItemInHand().getCustomName().getString();
                           ObsidianData.putName(pos, name);
                       }
                   }
