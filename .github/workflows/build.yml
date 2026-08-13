@@ -8,16 +8,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: 清理 Gradle 缓存
-        run: rm -rf ~/.gradle/caches/ || true
-
-      - name: 生成所有源代码
+      - name: 生成所有源代码（含强制合并源码集修复）
         run: |
           mkdir -p src/main/java/com/example/namedobsidian/mixin
           mkdir -p src/main/resources/assets/minecraft/models/block
           mkdir -p src/main/resources/assets/minecraft/models/item
           mkdir -p gradle/wrapper
 
+          # ----- 1. build.gradle（含强制合并 client 源码集的终极修复） -----
           cat > build.gradle <<'EOF'
           plugins {
               id 'fabric-loom' version '1.8.13'
@@ -38,8 +36,12 @@ jobs:
           loom {
               splitEnvironmentSourceSets()
           }
+          // 【终极修复】将 client 源码集强制合并到 main 编译类路径中
+          // 这样编译器就能找到 net.minecraft.client.* 和 Mixin 目标类了
+          sourceSets.main.java.srcDirs += sourceSets.client.java.srcDirs
           EOF
 
+          # ----- 2. 其他配置文件（settings.gradle, gradle.properties, gradle-wrapper.properties）-----
           cat > settings.gradle <<'EOF'
           pluginManagement {
               repositories {
@@ -64,6 +66,7 @@ jobs:
           zipStorePath=wrapper/dists
           EOF
 
+          # ----- 3. fabric.mod.json 和 mixins.json -----
           cat > src/main/resources/fabric.mod.json <<'EOF'
           {
             "schemaVersion": 1,
@@ -97,6 +100,7 @@ jobs:
           }
           EOF
 
+          # ----- 4. Java 源代码（保持原样）-----
           cat > src/main/java/com/example/namedobsidian/NamedObsidianMod.java <<'EOF'
           package com.example.namedobsidian;
           import net.fabricmc.api.ModInitializer;
@@ -224,6 +228,7 @@ jobs:
           }
           EOF
 
+          # ----- 5. 模型 JSON 文件 -----
           cat > src/main/resources/assets/minecraft/models/block/obsidian_void.json <<'EOF'
           {"parent":"minecraft:block/cube_all","textures":{"all":"minecraft:block/obsidian_void"}}
           EOF
