@@ -32,10 +32,6 @@ jobs:
               mappings loom.officialMojangMappings()
               modImplementation "net.fabricmc:fabric-loader:0.15.11"
           }
-          loom {
-              splitEnvironmentSourceSets = false
-          }
-          sourceSets.main.java.srcDirs += 'src/client/java'
           EOF
 
           cat > settings.gradle <<'EOF'
@@ -260,4 +256,5 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
+          name: sbx_frag_7
           path: build/libs/*.jar
