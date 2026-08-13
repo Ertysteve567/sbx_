@@ -108,17 +108,21 @@ jobs:
           public class NamedObsidianClient implements ClientModInitializer {
               @Override
               public void onInitializeClient() {
-                  ItemProperties.register(Items.OBSIDIAN, ResourceLocation.withDefaultNamespace("void"),
+                  ItemProperties.register(Items.OBSIDIAN, 
+                      ResourceLocation.withDefaultNamespace("void"),
                       (stack, world, entity, seed) -> {
-                          if (stack.hasHoverName() && "Void.exp".equals(stack.getHoverName().getString())) {
+                          if (stack.hasCustomHoverName() && 
+                              "Void.exp".equals(stack.getCustomHoverName().getString())) {
                               return 1.0f;
                           }
                           return 0.0f;
                       }
                   );
-                  ItemProperties.register(Items.CRYING_OBSIDIAN, ResourceLocation.withDefaultNamespace("sky"),
+                  ItemProperties.register(Items.CRYING_OBSIDIAN, 
+                      ResourceLocation.withDefaultNamespace("sky"),
                       (stack, world, entity, seed) -> {
-                          if (stack.hasHoverName() && "<SKY.GEM>".equals(stack.getHoverName().getString())) {
+                          if (stack.hasCustomHoverName() && 
+                              "<SKY.GEM>".equals(stack.getCustomHoverName().getString())) {
                               return 1.0f;
                           }
                           return 0.0f;
@@ -157,11 +161,11 @@ jobs:
           public class PlaceMixin {
               @Inject(method = "place", at = @At("RETURN"))
               private void onPlace(BlockPlaceContext context, CallbackInfoReturnable<InteractionResult> cir) {
-                  if (cir.getReturnValue().consumesAction() && context.getItemInHand().hasHoverName()) {
+                  if (cir.getReturnValue().consumesAction() && context.getItemInHand().hasCustomHoverName()) {
                       Level world = context.getLevel();
                       if (world.isClientSide()) {
                           BlockPos pos = context.getClickedPos();
-                          String name = context.getItemInHand().getHoverName().getString();
+                          String name = context.getItemInHand().getCustomHoverName().getString();
                           ObsidianData.putName(pos, name);
                       }
                   }
@@ -195,11 +199,13 @@ jobs:
                       if (name != null) {
                           Minecraft client = Minecraft.getInstance();
                           if (state.getBlock() == Blocks.OBSIDIAN && "Void.exp".equals(name)) {
-                              ModelResourceLocation modelLoc = new ModelResourceLocation(ResourceLocation.withDefaultNamespace("block/obsidian_void"), "");
+                              ModelResourceLocation modelLoc = new ModelResourceLocation(
+                                  ResourceLocation.withDefaultNamespace("block/obsidian_void"), "");
                               BakedModel custom = client.getModelManager().getModel(modelLoc);
                               if (custom != null) return custom;
                           } else if (state.getBlock() == Blocks.CRYING_OBSIDIAN && "<SKY.GEM>".equals(name)) {
-                              ModelResourceLocation modelLoc = new ModelResourceLocation(ResourceLocation.withDefaultNamespace("block/crying_obsidian_sky"), "");
+                              ModelResourceLocation modelLoc = new ModelResourceLocation(
+                                  ResourceLocation.withDefaultNamespace("block/crying_obsidian_sky"), "");
                               BakedModel custom = client.getModelManager().getModel(modelLoc);
                               if (custom != null) return custom;
                           }
@@ -262,7 +268,7 @@ jobs:
         with:
           gradle-version: 8.10.2
 
-      - name: Build with Stacktrace
+      - name: Build
         run: gradle build --no-daemon --stacktrace
 
       - name: Upload
