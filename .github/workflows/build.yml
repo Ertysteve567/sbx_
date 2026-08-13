@@ -109,12 +109,20 @@ jobs:
               @Override
               public void onInitializeClient() {
                   ItemProperties.register(Items.OBSIDIAN, ResourceLocation.withDefaultNamespace("void"),
-                      (stack, world, entity, seed) -> 
-                          stack.hasCustomName() && "Void.exp".equals(stack.getCustomName().getString()) ? 1.0f : 0.0f
+                      (stack, world, entity, seed) -> {
+                          if (stack.hasHoverName() && "Void.exp".equals(stack.getHoverName().getString())) {
+                              return 1.0f;
+                          }
+                          return 0.0f;
+                      }
                   );
                   ItemProperties.register(Items.CRYING_OBSIDIAN, ResourceLocation.withDefaultNamespace("sky"),
-                      (stack, world, entity, seed) -> 
-                          stack.hasCustomName() && "<SKY.GEM>".equals(stack.getCustomName().getString()) ? 1.0f : 0.0f
+                      (stack, world, entity, seed) -> {
+                          if (stack.hasHoverName() && "<SKY.GEM>".equals(stack.getHoverName().getString())) {
+                              return 1.0f;
+                          }
+                          return 0.0f;
+                      }
                   );
               }
           }
@@ -149,11 +157,11 @@ jobs:
           public class PlaceMixin {
               @Inject(method = "place", at = @At("RETURN"))
               private void onPlace(BlockPlaceContext context, CallbackInfoReturnable<InteractionResult> cir) {
-                  if (cir.getReturnValue().consumesAction() && context.getItemInHand().hasCustomName()) {
+                  if (cir.getReturnValue().consumesAction() && context.getItemInHand().hasHoverName()) {
                       Level world = context.getLevel();
                       if (world.isClientSide()) {
                           BlockPos pos = context.getClickedPos();
-                          String name = context.getItemInHand().getCustomName().getString();
+                          String name = context.getItemInHand().getHoverName().getString();
                           ObsidianData.putName(pos, name);
                       }
                   }
@@ -167,9 +175,11 @@ jobs:
           import net.minecraft.client.Minecraft;
           import net.minecraft.client.renderer.block.BlockRenderDispatcher;
           import net.minecraft.client.resources.model.BakedModel;
+          import net.minecraft.client.resources.model.ModelResourceLocation;
           import net.minecraft.core.BlockPos;
           import net.minecraft.resources.ResourceLocation;
           import net.minecraft.world.level.BlockAndTintGetter;
+          import net.minecraft.world.level.Level;
           import net.minecraft.world.level.block.Blocks;
           import net.minecraft.world.level.block.state.BlockState;
           import org.spongepowered.asm.mixin.Mixin;
@@ -180,15 +190,17 @@ jobs:
           public class BlockRenderDispatcherMixin {
               @ModifyVariable(method = "renderBlock", at = @At("HEAD"), argsOnly = true, index = 3)
               private BakedModel replaceModel(BakedModel original, BlockState state, BlockPos pos, BlockAndTintGetter world) {
-                  if (world.isClientSide()) {
-                      String name = ObsidianData.getClientName(world, pos);
+                  if (world instanceof Level && ((Level) world).isClientSide()) {
+                      String name = ObsidianData.getClientName((Level) world, pos);
                       if (name != null) {
                           Minecraft client = Minecraft.getInstance();
                           if (state.getBlock() == Blocks.OBSIDIAN && "Void.exp".equals(name)) {
-                              BakedModel custom = client.getModelManager().getModel(ResourceLocation.withDefaultNamespace("block/obsidian_void"));
+                              ModelResourceLocation modelLoc = new ModelResourceLocation(ResourceLocation.withDefaultNamespace("block/obsidian_void"), "");
+                              BakedModel custom = client.getModelManager().getModel(modelLoc);
                               if (custom != null) return custom;
                           } else if (state.getBlock() == Blocks.CRYING_OBSIDIAN && "<SKY.GEM>".equals(name)) {
-                              BakedModel custom = client.getModelManager().getModel(ResourceLocation.withDefaultNamespace("block/crying_obsidian_sky"));
+                              ModelResourceLocation modelLoc = new ModelResourceLocation(ResourceLocation.withDefaultNamespace("block/crying_obsidian_sky"), "");
+                              BakedModel custom = client.getModelManager().getModel(modelLoc);
                               if (custom != null) return custom;
                           }
                       }
