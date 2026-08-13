@@ -102,44 +102,46 @@ jobs:
           cat > src/main/java/com/example/namedobsidian/NamedObsidianClient.java <<'EOF'
           package com.example.namedobsidian;
           import net.fabricmc.api.ClientModInitializer;
-          import net.minecraft.client.Minecraft;
           import net.minecraft.client.renderer.item.ItemProperties;
+          import net.minecraft.client.renderer.item.ClampedItemPropertyFunction;
           import net.minecraft.resources.ResourceLocation;
+          import net.minecraft.world.item.Item;
           import net.minecraft.world.item.Items;
           import java.lang.reflect.Method;
           public class NamedObsidianClient implements ClientModInitializer {
               @Override
               public void onInitializeClient() {
                   try {
-                      // 使用反射绕过私有访问限制
                       Method registerMethod = ItemProperties.class.getDeclaredMethod(
-                          "register", 
-                          net.minecraft.world.item.Item.class,
+                          "register",
+                          Item.class,
                           ResourceLocation.class,
-                          net.minecraft.client.renderer.item.ClampedItemPropertyFunction.class
+                          ClampedItemPropertyFunction.class
                       );
                       registerMethod.setAccessible(true);
-                      
-                      registerMethod.invoke(null, Items.OBSIDIAN,
+
+                      // 使用显式 Object[] 数组传递参数，避免 varargs 类型推断问题
+                      registerMethod.invoke(null, new Object[]{
+                          Items.OBSIDIAN,
                           ResourceLocation.withDefaultNamespace("void"),
-                          (stack, world, entity, seed) -> {
+                          (ClampedItemPropertyFunction) (stack, world, entity, seed) -> {
                               if ("Void.exp".equals(stack.getDisplayName().getString())) {
                                   return 1.0f;
                               }
                               return 0.0f;
                           }
-                      );
-                      registerMethod.invoke(null, Items.CRYING_OBSIDIAN,
+                      });
+                      registerMethod.invoke(null, new Object[]{
+                          Items.CRYING_OBSIDIAN,
                           ResourceLocation.withDefaultNamespace("sky"),
-                          (stack, world, entity, seed) -> {
+                          (ClampedItemPropertyFunction) (stack, world, entity, seed) -> {
                               if ("<SKY.GEM>".equals(stack.getDisplayName().getString())) {
                                   return 1.0f;
                               }
                               return 0.0f;
                           }
-                      );
+                      });
                   } catch (Exception e) {
-                      // 如果反射失败，说明环境不支持，但基本不会发生
                       e.printStackTrace();
                   }
               }
